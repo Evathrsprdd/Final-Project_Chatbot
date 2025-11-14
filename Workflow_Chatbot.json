@@ -1,0 +1,405 @@
+{
+  "name": "memasak finpro",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "Kamu adalah chatbot resep masakan Indonesia. Tugasmu adalah menjawab setiap pertanyaan tentang resep masakan Indonesia secara jelas, lengkap, dan terstruktur. Berikan jawaban dengan ramah dengan memberikan bantuan ketika menjawab.\n\nBuatlah secara rapi dengan mengikuti penulisan ini:\nJudul Resep\n \nBahan: \n- Gunakan bullet list (-)\n- Tulis setiap bahan dalam satu baris\n- Jangan gunakan simbol aneh atau HTML\n\nLangkah-langkah:\n1. Gunakan penomoran (1, 2, 3, ...)\n2. Buat langkah-langkah yang jelas, urut, dan mudah diikuti\n3. Pisahkan setiap langkah ke baris baru\n\nAturan Penting: \n- Pisahkan setiap bagian (Judul, Bahan, Langkah) dengan satu line break kosong.\n- Jangan menghasilkan teks dengan simbol atau format yang tidak biasa.\n- Tulis jawaban secara rapi dan konsisten di setiap respons.\n\nJika informasi bahan atau langkah tidak ditemukan dalam database: \n- Jangan menjawab “tidak tersedia”.\n- Sebaliknya, buat versi resep yang masuk akal berdasarkan pengetahuan umum tentang masakan tersebut.\n\nPastikan SEMUA jawaban mengikuti format di atas.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "398f0a9d-c635-4a11-816d-a60452795642",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "41bacbc7-ff6e-4f1e-8625-f51c6488f160",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RdNTj6W57VaJKGKV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "a48b492c-daf0-42dc-8db0-3bfe82e36579",
+      "name": "Send a text message",
+      "webhookId": "7dc43ceb-4f7e-44cb-9f0b-0ea23e0f4bab",
+      "credentials": {
+        "telegramApi": {
+          "id": "UMGNyN2RZCj0gP3h",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        848,
+        0
+      ],
+      "id": "e4a30ad8-3b5b-4aa2-aaf3-6757961fd7b1",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_b4NiZw09OxCsE_zGlYwScSlG_IuhBBBEQiEWO40W08",
+          "mode": "list",
+          "cachedResultName": "dataset_finpro",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_b4NiZw09OxCsE_zGlYwScSlG_IuhBBBEQiEWO40W08/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 862640490,
+          "mode": "list",
+          "cachedResultName": "dataset",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_b4NiZw09OxCsE_zGlYwScSlG_IuhBBBEQiEWO40W08/edit#gid=862640490"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1056,
+        0
+      ],
+      "id": "42484eb3-905f-43d0-9c1c-2ebb213708e0",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "D7hzV0jIdSa50wen",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1536,
+        0
+      ],
+      "id": "acc2645e-dac6-4816-b2d5-172e66ea8481",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tJjIHlngbd3ngFR9",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ambil semua data dari node sebelumnya\nconst recipes = $input.all();\n\n// Buat array kosong untuk menampung hasil\nconst output = [];\n\n// Loop semua data resep\nfor (const item of recipes) {\n  // Gabungkan kolom Title, Ingredients, Steps, dan URL jadi satu teks\n  const content = `Judul: ${item.json.Title}\\n\\n` +\n                  `Bahan-bahan:\\n${item.json.Ingredients}\\n\\n` +\n                  `Langkah-langkah:\\n${item.json.Steps}\\n\\n` +\n                  `Sumber: ${item.json.URL}`;\n\n  // Simpan hasilnya ke array output\n  output.push({\n    json: {\n      title: item.json.Title,\n      content: content,   // teks gabungan (siap untuk embedding)\n      url: item.json.URL\n    }\n  });\n}\n\n// Kirim hasil akhir ke node berikutnya\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "2d18809d-bbf4-479e-a58c-b6241b58a24d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        208
+      ],
+      "id": "30df93e9-345d-4061-a304-12d2b03713f0",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        208
+      ],
+      "id": "cb3356ac-811d-46e5-9c76-72a4f5f511bf",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RdNTj6W57VaJKGKV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Kamu adalah chatbot resep masakan Indonesia. Tugasmu adalah menjawab setiap pertanyaan tentang resep masakan Indonesia secara jelas, lengkap, dan terstruktur. Berikan jawaban dengan ramah dengan memberikan bantuan ketika menjawab.\n\nBuatlah secara rapi dengan mengikuti penulisan ini:\nJudul Resep\n \nBahan: \n- Gunakan bullet list (-)\n- Tulis setiap bahan dalam satu baris\n- Jangan gunakan simbol aneh atau HTML\n\nLangkah-langkah:\n1. Gunakan penomoran (1, 2, 3, ...)\n2. Buat langkah-langkah yang jelas, urut, dan mudah diikuti\n3. Pisahkan setiap langkah ke baris baru\n\nAturan Penting: \n- Pisahkan setiap bagian (Judul, Bahan, Langkah) dengan satu line break kosong.\n- Jangan menghasilkan teks dengan simbol atau format yang tidak biasa.\n- Tulis jawaban secara rapi dan konsisten di setiap respons.\n\nJika informasi bahan atau langkah tidak ditemukan dalam database: \n- Jangan menjawab “tidak tersedia”.\n- Sebaliknya, buat versi resep yang masuk akal berdasarkan pengetahuan umum tentang masakan tersebut.\n\nPastikan SEMUA jawaban mengikuti format di atas.\n",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        208
+      ],
+      "id": "4c9656f0-527f-4e30-a35d-efc695942481",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tJjIHlngbd3ngFR9",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        384,
+        400
+      ],
+      "id": "42377f0c-72ee-4688-bfa6-ad4598085d24",
+      "name": "Embeddings Google Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RdNTj6W57VaJKGKV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "96791afa-ec90-4bcc-a925-53f268ca7b05",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "ClAhOPJEExDTcZKZ",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "412eb85f-44c9-46cf-a0f0-37f251855aa7",
+      "name": "Telegram Trigger",
+      "webhookId": "4b8e5b7e-75b5-4fe2-8fc0-d271a8b23473",
+      "credentials": {
+        "telegramApi": {
+          "id": "UMGNyN2RZCj0gP3h",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8ccfcd8b-833c-4343-ad73-41e021d57e43",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "03ba94f6b0779814d78528fd33fbaee27bd1f48e36ea418aad982eb36d52f5ff"
+  },
+  "id": "WPKzxV12uDnaxJm8",
+  "tags": []
+}
