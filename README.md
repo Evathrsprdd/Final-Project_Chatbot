@@ -42,33 +42,20 @@ Dataset kemudian disimpan dalam format yang siap dipakai dalam workflow RAG.
 
 ## 🧠 Arsitektur RAG Workflow
 
-Berikut alur kerja chatbot:
-
-User (Telegram)
+Get Rows from Google Sheets
 
 ↓
 
-Telegram Trigger → menerima pesan dari user
+Code Node (merge Title + Ingredients + Steps)
 
 ↓
 
-Chat Query Embedding → mengubah pertanyaan user menjadi vektor
+Google Gemini Embedding (output 768-dim vectors)
 
 ↓
 
-Supabase Vector Store → mencari resep paling relevan dari database
+Supabase Vector Store (Insert Documents)
 
-↓
-
-RAG Context Builder → menggabungkan hasil pencarian + pertanyaan
-
-↓
-
-LLM (Gemini Chat Model) → menghasilkan jawaban terstruktur
-
-↓
-
-Telegram Send Message → mengirim jawaban ke user
 
 
 ---
