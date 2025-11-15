@@ -35,6 +35,7 @@ Dataset kemudian disimpan dalam format yang siap dipakai dalam workflow RAG.
 | Embedding model | **Gemini Embeddings** |
 | Vector database | **Supabase Vector Store** |
 | Large Language Model (LLM) | **Gemini** |
+| Memory | **Postgres Chat Memory** |
 | Dataset | **Kaggle** |
 
 ---
